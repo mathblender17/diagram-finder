@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Search</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; }
+        input { width: 300px; padding: 8px; margin-bottom: 10px; }
+        button { padding: 8px; cursor: pointer; }
+        .image-container { display: flex; flex-wrap: wrap; justify-content: center; }
+        .image-card { border: 1px solid #ddd; padding: 10px; margin: 10px; width: 300px; text-align: left; }
+        img { width: 100%; height: auto; }
+        .likes { color: red; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>Image Search</h1>
+    <input type="text" id="searchQuery" placeholder="Search images...">
+    <button onclick="searchImages()">Search</button>
+
+    <div class="image-container" id="results"></div>
+
+    <script>
+        function searchImages() {
+            const query = document.getElementById('searchQuery').value;
+            fetch(`/search?query=${query}`)
+                .then(response => response.json())
+                .then(data => {
+                    const resultsDiv = document.getElementById('results');
+                    resultsDiv.innerHTML = '';
+
+                    data.results.forEach(img => {
+                        const card = document.createElement('div');
+                        card.classList.add('image-card');
+                        card.innerHTML = `
+                            <h3>${img.title}</h3>
+                            <img src="${img.image_url}" alt="Image">
+                            <p class="likes">❤️ Likes: ${img.likes}</p>
+                            <button onclick="likeImage(${img.id})">Like</button>
+                            <p>Comments:</p>
+                            <ul>${img.comments.map(c => `<li>${c}</li>`).join('')}</ul>
+                            <input type="text" id="comment_${img.id}" placeholder="Add a comment">
+                            <button onclick="addComment(${img.id})">Comment</button>
+                        `;
+                        resultsDiv.appendChild(card);
+                    });
+                });
+        }
+
+        function likeImage(imageId) {
+            fetch(`/like/${imageId}`, { method: 'POST' })
+                .then(response => response.json())
+                .then(() => searchImages());
+        }
+
+        function addComment(imageId) {
+            const commentText = document.getElementById(`comment_${imageId}`).value;
+            fetch(`/comment/${imageId}`, { 
+                method: 'POST', 
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text: commentText }) 
+            }).then(() => searchImages());
+        }
+    </script>
+</body>
+</html>
